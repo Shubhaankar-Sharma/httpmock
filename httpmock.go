@@ -60,7 +60,7 @@ func NewMockHTTPServer(b ...string) *MockHTTPServer {
 }
 
 func (m *MockHTTPServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	reqString, err := request2string(*req)
+	reqString, err := request2string(*req, m.Opts)
 	if err != nil {
 		w.WriteHeader(400)
 		w.Write([]byte("invalid request"))

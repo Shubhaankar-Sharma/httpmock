@@ -9,7 +9,7 @@ import (
 )
 
 func (m *MockHTTPServer) AddResponse(resp MockResponse) error {
-	requestString, err := request2string(resp.Request)
+	requestString, err := request2string(resp.Request, m.Opts)
 	if err != nil {
 		return err
 	}
@@ -28,8 +28,17 @@ func (m *MockHTTPServer) AddResponses(resp []MockResponse) error {
 	return nil
 }
 
-func request2string(req http.Request) (string, error) {
+func request2string(req http.Request, opts []Option) (string, error) {
 	addRequestDefaults(&req)
+
+	var overrideHeaderMatch bool
+	for _, opt := range opts {
+		switch opt {
+		case OverrideHeaderMatchOption:
+			overrideHeaderMatch = true
+		}
+	}
+
 	fragments := []string{
 		req.Method,
 		req.URL.RequestURI(),
@@ -44,12 +53,14 @@ func request2string(req http.Request) (string, error) {
 		fragments = append(fragments, "")
 	}
 
-	headerStrings := make([]string, 0)
-	for index, values := range req.Header {
-		headerStrings = append(headerStrings, fmt.Sprintf("%s: %s", strings.ToLower(index), strings.Join(values, ",")))
+	if !overrideHeaderMatch {
+		headerStrings := make([]string, 0)
+		for index, values := range req.Header {
+			headerStrings = append(headerStrings, fmt.Sprintf("%s: %s", strings.ToLower(index), strings.Join(values, ",")))
+		}
+		sort.Strings(headerStrings)
+		fragments = append(fragments, headerStrings...)
 	}
-	sort.Strings(headerStrings)
-	fragments = append(fragments, headerStrings...)
 
 	return strings.Join(fragments, "|"), nil
 }
